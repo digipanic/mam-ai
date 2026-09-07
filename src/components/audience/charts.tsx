@@ -1,7 +1,7 @@
 import { useId } from "react";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, ScatterChart, Scatter, CartesianGrid, BarChart, Bar, Cell, ReferenceLine } from "recharts";
 import type { ArtistRecord, HistoricalPoint } from "@/lib/audience-types";
-import { formatNumber, formatPercent, formatSigned } from "@/lib/audience-selectors";
+import { formatDate, formatNumber, formatPercent, formatSigned } from "@/lib/audience-selectors";
 
 const positive = "var(--chart-2)", negative = "var(--destructive)", primary = "var(--primary)";
 export function Sparkline({ artist }: { artist: ArtistRecord }) { const id = useId(); const data=artist.monthlyHistory.filter(p=>p.followers!==null); if(data.length<2) return <span className="text-xs text-muted-foreground">—</span>; return <div className="h-8 w-20"><ResponsiveContainer><LineChart data={data}><defs><linearGradient id={id}/></defs><Line type="monotone" dataKey="followers" stroke={primary} strokeWidth={1.5} dot={false}/></LineChart></ResponsiveContainer></div> }
