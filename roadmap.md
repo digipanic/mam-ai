@@ -2,3 +2,4 @@
 - Add roster health, monthly pace, consistency, platform coverage, and ranking context from live audience data.
 - Expand each artist profile into a complete live record view with all safe available audience data.
 - Keep roster size, coverage, rankings, and artist views fully dynamic as the live roster expands.
+- Showcase source-labelled historical Instagram and SoundCloud checkpoints on every eligible artist profile, separately from live monitoring.
