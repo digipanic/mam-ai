@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { getServiceAccountAccessToken } from "@/lib/google-service-account";
 import type { AudienceMonitorData, ArtistRecord, MonthlyPoint, ObservationSource, PlatformMetric } from "@/lib/audience-types";
 
 const SPREADSHEET_ID = "1ysF90fgjl5iMREIUn6AaJ0wVstRuRaTpZOT4a9RpoK4";
@@ -55,15 +56,17 @@ const monthOf = (at: string) => /^\d{4}-\d{2}$/.test(at) ? at : (Number.isNaN(ne
 const normalizedMonth = (value: Cell): string | null => { const raw = text(value); return raw ? (monthOnly(raw) ?? raw) : null; };
 
 async function getBatch(ranges: string[]) {
-  const apiKey = process.env["GOOGLE_SHEETS_API_KEY"];
-  if (!apiKey) throw new Error("Google Sheets API is not configured.");
+  // Service-account bearer token — the Sheet stays private, shared only with
+  // the service account's own email, never a public "anyone with the link".
+  const accessToken = await getServiceAccountAccessToken();
   const params = new URLSearchParams({
     valueRenderOption: "UNFORMATTED_VALUE",
     dateTimeRenderOption: "FORMATTED_STRING",
-    key: apiKey,
   });
   ranges.forEach((range) => params.append("ranges", range));
-  const response = await fetch(`${SHEETS_BASE}/spreadsheets/${SPREADSHEET_ID}/values:batchGet?${params.toString()}`);
+  const response = await fetch(`${SHEETS_BASE}/spreadsheets/${SPREADSHEET_ID}/values:batchGet?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
   if (!response.ok) {
     const body = await response.text();
     console.error(`Google Sheets request failed [${response.status}]: ${body}`);

@@ -24,6 +24,13 @@ every route through `useAudienceMonitor()`.
   (whether Minor AM's own scraper is succeeding) are different concepts —
   don't conflate them.
 
-No Lovable runtime dependency remains in this project — Google Sheets is
-called directly server-side with `GOOGLE_SHEETS_API_KEY`, and the app builds
-with a plain Vite + nitro(vercel) config for deployment on Vercel.
+No Lovable runtime dependency remains in this project, and no paid
+infrastructure is used anywhere. The Sheet is kept **private** and read via a
+free Google Cloud service account (`src/lib/google-service-account.ts` signs
+its own JWT bearer token with `node:crypto` — no auth library, no
+`GOOGLE_SHEETS_API_KEY`, no "anyone with the link"). The app builds with a
+plain Vite + `nitro(vercel)` config and deploys as a single Node.js
+serverless function on Vercel's free Hobby tier. Don't reintroduce a paid
+service (Cloud Run, a hosted database, Supabase, etc.) for this — the sheet
+is small and read-only, this setup is deliberately the simplest thing that
+works.

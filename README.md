@@ -6,16 +6,21 @@ and Resident Advisor.
 ## Architecture
 
 ```
-Monitoring scripts → Google Sheets → Google Sheets API → this app (TanStack Start) → Vercel
+Monitoring scripts → Google Sheets → Google Sheets API (service account) → this app (TanStack Start) → Vercel
 ```
 
 The Google Sheet ("Minor AM — Social Media Monitoring Sheet") is the
-production source of truth. `src/lib/audience-monitor.functions.ts` is a
-server function (runs server-side only, never shipped to the browser) that
-reads the Roster, Instagram/SoundCloud/Resident Advisor snapshot tabs, the
-monthly-history tab, and the Viberate/Modash historical tab directly from the
-Google Sheets API, then normalizes them into the shape every route consumes
-via `useAudienceMonitor()`.
+production source of truth, and stays **private** — it's shared only with a
+Google service account, never "anyone with the link". `src/lib/audience-monitor.functions.ts` is a server function (runs
+server-side only, never shipped to the browser) that authenticates as that
+service account (`src/lib/google-service-account.ts`), reads the Roster,
+Instagram/SoundCloud/Resident Advisor snapshot tabs, the monthly-history tab,
+and the Viberate/Modash historical tab from the Google Sheets API, then
+normalizes them into the shape every route consumes via `useAudienceMonitor()`.
+
+No paid infrastructure is involved anywhere in this stack: the Sheets API and
+a Google Cloud service account are free, and the app runs on Vercel's free
+Hobby tier as a single Node.js serverless function.
 
 Data rules the normalization enforces — see `AGENTS.md` for the full list:
 
@@ -31,13 +36,14 @@ Data rules the normalization enforces — see `AGENTS.md` for the full list:
 
 ## Environment
 
-Set `GOOGLE_SHEETS_API_KEY` (a Google API key with the Sheets API enabled)
-as a server-side environment variable — in Vercel this is a Project
-Environment Variable, never a `VITE_`-prefixed one, so it's never bundled
-into client code. The sheet must be shared as "Anyone with the link can
-view" for a plain API key to read it; if it needs to stay unlisted, switch
-`getBatch` in `audience-monitor.functions.ts` to a service-account bearer
-token instead and share the sheet with that service account's email.
+Two server-side environment variables (never `VITE_`-prefixed, so they're
+never bundled into client code):
+
+- `GOOGLE_SERVICE_ACCOUNT_EMAIL` — the service account's `client_email`.
+- `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` — the service account's `private_key`,
+  pasted as one line with literal `\n` sequences (not real newlines).
+
+See "Setup" below for exactly how to create these for free.
 
 ## Development
 
@@ -45,11 +51,51 @@ token instead and share the sheet with that service account's email.
 git clone <this-repository-url>
 cd <repository-name>
 bun install   # or npm install
-GOOGLE_SHEETS_API_KEY=... bun run dev
+cp .env.example .env   # fill in the two GOOGLE_SERVICE_ACCOUNT_* values
+bun run dev
 ```
+
+## Testing
+
+```sh
+bun test
+```
+
+Covers the Google Sheets normalization (canonical monthly checkpoints,
+same-month growth rejection, no-zero-fill, dynamic roster, provenance) and
+the service-account JWT signing, with no network access required.
 
 ## Deployment
 
 Deploys to Vercel with no extra configuration — `vite build` runs nitro's
-`vercel` preset, which emits the standard Vercel Build Output. Set
-`GOOGLE_SHEETS_API_KEY` in the Vercel project's environment variables.
+`vercel` preset, which emits the standard Vercel Build Output as a single
+Node.js serverless function. Set the two `GOOGLE_SERVICE_ACCOUNT_*` variables
+in the Vercel project's environment variables.
+
+## Setup: Google Cloud + Vercel (free)
+
+1. **Google Cloud project** — create one at console.cloud.google.com (no
+   billing account required for this).
+2. **Enable the Google Sheets API** for that project (APIs & Services →
+   Enable APIs and Services → search "Google Sheets API" → Enable). Free,
+   no quota cost at this app's read volume.
+3. **Create a service account** (APIs & Services → Credentials → Create
+   Credentials → Service account). No roles/permissions need to be granted
+   at the project level — this account only needs Viewer access to the one
+   Sheet, granted in the next step.
+4. **Create a JSON key** for that service account (its page → Keys → Add
+   Key → Create new key → JSON) and download it. It contains `client_email`
+   and `private_key`.
+5. **Share the Google Sheet** with the service account's `client_email` as
+   Viewer — the same way you'd share it with a person. The sheet stays
+   private to everyone else.
+6. **Set the two environment variables** in the Vercel project (Settings →
+   Environment Variables): `GOOGLE_SERVICE_ACCOUNT_EMAIL` = the
+   `client_email` value, and `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` = the
+   `private_key` value pasted exactly as it appears in the JSON (keep the
+   `\n` escapes and the `-----BEGIN/END PRIVATE KEY-----` lines).
+7. **Deploy** — connect the GitHub repo to a new Vercel project (Hobby
+   plan/tier is enough) and redeploy after the env vars are set.
+
+Nothing else needs creating: no OAuth consent screen, no Cloud Run service,
+no database, no other Google or Vercel product.
