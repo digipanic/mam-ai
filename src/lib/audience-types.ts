@@ -1,6 +1,7 @@
 export type PlatformMetric = { audience: number | null; observedAt: string | null };
 
 export type MonthlyPoint = { month: string; followers: number | null };
+export type HistoricalPoint = { date: string; followers: number; source: string };
 
 export type ArtistRecord = {
   name: string;
@@ -12,6 +13,7 @@ export type ArtistRecord = {
   soundcloud: PlatformMetric;
   residentAdvisor: PlatformMetric;
   monthlyHistory: MonthlyPoint[];
+  historical: { instagram: HistoricalPoint[]; soundcloud: HistoricalPoint[] };
 };
 
 export type AudienceMonitorData = {
