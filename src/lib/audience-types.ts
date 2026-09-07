@@ -4,6 +4,12 @@ export type PlatformMetric = { audience: number | null; observedAt: string | nul
 export type MonthlyPoint = { month: string; followers: number | null; source: ObservationSource | null; observedAt: string | null };
 export type HistoricalPoint = { date: string; followers: number; source: ObservationSource };
 
+// Whether Minor AM's own scraper is successfully collecting an artist is a
+// different question from what their current audience is (a stale-but-OK
+// scrape and a broken scraper can show the same last-known number). This is
+// the last *attempt*, successful or not — never just the last success.
+export type MonitoringStatus = { lastAttemptAt: string | null; status: string | null; ok: boolean };
+
 export type ArtistRecord = {
   name: string;
   location: string | null;
@@ -15,6 +21,7 @@ export type ArtistRecord = {
   residentAdvisor: PlatformMetric;
   monthlyHistory: MonthlyPoint[];
   historical: { instagram: HistoricalPoint[]; soundcloud: HistoricalPoint[] };
+  monitoring: { instagram: MonitoringStatus; soundcloud: MonitoringStatus; residentAdvisor: MonitoringStatus };
 };
 
 export type AudienceMonitorData = {

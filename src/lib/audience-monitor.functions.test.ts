@@ -121,4 +121,44 @@ describe("data rules", () => {
     expect(artist.instagram.source).toBe("Minor AM monitoring");
     expect(artist.historical.instagram[0]?.source).toBe("Viberate");
   });
+
+  test("monitoring health tracks the last attempt, not just the last success", () => {
+    const data = buildAudienceMonitorData(
+      batches({
+        roster: [["flaky-scraper", null, null, null, null, null, null]],
+        // A successful scrape, then a later failed attempt — the artist still
+        // has an old audience number, but monitoring health must show broken.
+        instagram: [
+          ["flaky-scraper", 10000, "1 Aug 2026", "1 Aug 2026", "OK"],
+          ["flaky-scraper", null, "1 Sep 2026", "1 Sep 2026", "Profile not found"],
+        ],
+      }),
+    );
+    const artist = data.artists.find((entry) => entry.name === "flaky-scraper")!;
+    expect(artist.instagram.audience).toBe(10000); // stale but last-known-good
+    expect(artist.monitoring.instagram.ok).toBe(false);
+    expect(artist.monitoring.instagram.status).toBe("Profile not found");
+    expect(artist.monitoring.instagram.lastAttemptAt).toContain("2026-09");
+  });
+
+  test("monitoring health is healthy when the last attempt succeeded", () => {
+    const data = buildAudienceMonitorData(
+      batches({
+        roster: [["healthy", null, null, null, null, null, null]],
+        instagram: [["healthy", 10000, "1 Sep 2026", "1 Sep 2026", "OK"]],
+      }),
+    );
+    const artist = data.artists.find((entry) => entry.name === "healthy")!;
+    expect(artist.monitoring.instagram.ok).toBe(true);
+  });
+
+  test("monitoring health has no attempt on record when the scraper has never run", () => {
+    const data = buildAudienceMonitorData(
+      batches({ roster: [["never-scraped", null, null, null, null, null, null]] }),
+    );
+    const artist = data.artists.find((entry) => entry.name === "never-scraped")!;
+    expect(artist.monitoring.instagram.ok).toBe(false);
+    expect(artist.monitoring.instagram.lastAttemptAt).toBeNull();
+    expect(artist.monitoring.instagram.status).toBeNull();
+  });
 });

@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getServiceAccountAccessToken } from "@/lib/google-service-account";
-import type { AudienceMonitorData, ArtistRecord, MonthlyPoint, ObservationSource, PlatformMetric } from "@/lib/audience-types";
+import type { AudienceMonitorData, ArtistRecord, MonitoringStatus, MonthlyPoint, ObservationSource, PlatformMetric } from "@/lib/audience-types";
 
 const SPREADSHEET_ID = "1ysF90fgjl5iMREIUn6AaJ0wVstRuRaTpZOT4a9RpoK4";
 const SHEETS_BASE = "https://sheets.googleapis.com/v4";
@@ -49,6 +49,13 @@ const latest = (items: Observation[]): PlatformMetric => {
   return { audience: item?.value ?? null, observedAt: item?.at ?? null, source: item?.source ?? null };
 };
 const sourceName = (value: string | null): ObservationSource => value?.toLowerCase().includes("modash") ? "Modash" : value?.toLowerCase().includes("viberate") ? "Viberate" : "Historical checkpoint";
+type Attempt = { name: string; at: string; status: string | null };
+// Monitoring health is the last *attempt* (successful or not), never just the
+// last success — a stuck scraper and a quiet artist can otherwise look identical.
+const monitoringStatusFor = (attempts: Attempt[], name: string): MonitoringStatus => {
+  const last = attempts.filter((attempt) => attempt.name === name).sort((a, b) => Date.parse(a.at) - Date.parse(b.at)).at(-1);
+  return { lastAttemptAt: last?.at ?? null, status: last?.status ?? null, ok: last?.status === "OK" };
+};
 // A bare "YYYY-MM" value is already a month key; only full timestamps need slicing.
 const monthOf = (at: string) => /^\d{4}-\d{2}$/.test(at) ? at : (Number.isNaN(new Date(at).valueOf()) ? at.slice(0, 7) : new Date(at).toISOString().slice(0, 7));
 // The "Monthly Historical Followers" tab's Month column is normally already a
@@ -84,9 +91,18 @@ const RANGES = ["Roster!A1:O1000", "Instagram Profile Snapshots!A1:T1500", "Soun
 export function buildAudienceMonitorData(batches: Row[][]): AudienceMonitorData {
   const [rosterValues, instagramValues, soundcloudValues, raValues, monthlyValues, historicalValues] = batches;
   const roster = keyedRows(rosterValues ?? []);
-  const instagram = keyedRows(instagramValues ?? []).map((row) => ({ name: text(row["Artist"]), value: number(row["Followers"]), at: iso(row["Collected At"]) ?? iso(row["Raw Timestamp"]), status: text(row["Source Status"]), source: "Minor AM monitoring" as const })).filter((row) => row.name && row.value !== null && row.status === "OK") as ({ name: string; status: string | null } & Observation)[];
-  const soundcloud = keyedRows(soundcloudValues ?? []).map((row) => ({ name: text(row["Artist"]), value: number(row["Followers"]), at: iso(row["Collected At"]), status: text(row["Source Status"]), source: "Minor AM monitoring" as const })).filter((row) => row.name && row.value !== null && row.status === "OK") as ({ name: string; status: string | null } & Observation)[];
-  const ra = keyedRows(raValues ?? []).map((row) => ({ name: text(row["Artist"]), value: number(row["Followers / Fans"]), at: iso(row["Raw Timestamp"]) ?? iso(row["Collected At"]), status: text(row["Source Status"]), source: "Minor AM monitoring" as const })).filter((row) => row.name && row.value !== null && row.status === "OK") as ({ name: string; status: string | null } & Observation)[];
+  const instagramRows = keyedRows(instagramValues ?? []).map((row) => ({ name: text(row["Artist"]), value: number(row["Followers"]), at: iso(row["Collected At"]) ?? iso(row["Raw Timestamp"]), status: text(row["Source Status"]), source: "Minor AM monitoring" as const }));
+  const soundcloudRows = keyedRows(soundcloudValues ?? []).map((row) => ({ name: text(row["Artist"]), value: number(row["Followers"]), at: iso(row["Collected At"]), status: text(row["Source Status"]), source: "Minor AM monitoring" as const }));
+  const raRows = keyedRows(raValues ?? []).map((row) => ({ name: text(row["Artist"]), value: number(row["Followers / Fans"]), at: iso(row["Raw Timestamp"]) ?? iso(row["Collected At"]), status: text(row["Source Status"]), source: "Minor AM monitoring" as const }));
+  const instagram = instagramRows.filter((row) => row.name && row.value !== null && row.status === "OK") as ({ name: string; status: string | null } & Observation)[];
+  const soundcloud = soundcloudRows.filter((row) => row.name && row.value !== null && row.status === "OK") as ({ name: string; status: string | null } & Observation)[];
+  const ra = raRows.filter((row) => row.name && row.value !== null && row.status === "OK") as ({ name: string; status: string | null } & Observation)[];
+  // Every attempted collection, successful or not — this is what monitoring
+  // health reads from, distinct from the OK-only arrays above.
+  const asAttempts = (rows: { name: string | null; at: string | null; status: string | null }[]): Attempt[] => rows.filter((row) => row.name && row.at).map((row) => ({ name: row.name as string, at: row.at as string, status: row.status }));
+  const instagramAttempts = asAttempts(instagramRows);
+  const soundcloudAttempts = asAttempts(soundcloudRows);
+  const raAttempts = asAttempts(raRows);
   const monthlyRows = keyedRows(monthlyValues ?? []);
   const historicalRows = keyedRows(historicalValues ?? []).map((row) => ({ name: text(row["Artist"]), platform: text(row["Platform"]), date: iso(row["Date"]), followers: number(row["Followers"]), source: sourceName(text(row["Source"])) })).filter((row) => row.name && row.platform && row.date && row.followers !== null) as { name: string; platform: string; date: string; followers: number; source: ObservationSource }[];
   const months = [...new Set([...monthlyRows.map((row) => normalizedMonth(row["Month"])), ...historicalRows.filter((row) => row.platform.toLowerCase() === "instagram").map((row) => monthOf(row.date))].filter((value): value is string => Boolean(value)))].sort();
@@ -134,7 +150,8 @@ export function buildAudienceMonitorData(batches: Row[][]): AudienceMonitorData 
       : undefined;
     const change = currentInstagram.audience !== null && baselinePoint?.followers != null ? currentInstagram.audience - baselinePoint.followers : null;
     const growthPercent = change !== null && baselinePoint?.followers ? (change / baselinePoint.followers) * 100 : null;
-    return { name, location: text(row["Location"]), role: text(row["Role"]), instagramHandle: text(row["Instagram Handle"]), urls: { instagram: text(row["Instagram URL"]), soundcloud: text(row["SoundCloud URL"]), residentAdvisor: text(row["Resident Advisor URL"]) }, instagram: { ...currentInstagram, baseline: baselinePoint?.followers ?? null, baselineAt: baselinePoint?.observedAt ?? null, change, growthPercent }, soundcloud: latest(unifiedSoundcloud), residentAdvisor: latest(ra.filter((item) => item.name === name)), monthlyHistory, historical: { instagram: instagramHistory, soundcloud: soundcloudHistory } };
+    const monitoring = { instagram: monitoringStatusFor(instagramAttempts, name), soundcloud: monitoringStatusFor(soundcloudAttempts, name), residentAdvisor: monitoringStatusFor(raAttempts, name) };
+    return { name, location: text(row["Location"]), role: text(row["Role"]), instagramHandle: text(row["Instagram Handle"]), urls: { instagram: text(row["Instagram URL"]), soundcloud: text(row["SoundCloud URL"]), residentAdvisor: text(row["Resident Advisor URL"]) }, instagram: { ...currentInstagram, baseline: baselinePoint?.followers ?? null, baselineAt: baselinePoint?.observedAt ?? null, change, growthPercent }, soundcloud: latest(unifiedSoundcloud), residentAdvisor: latest(ra.filter((item) => item.name === name)), monthlyHistory, historical: { instagram: instagramHistory, soundcloud: soundcloudHistory }, monitoring };
   }).filter((artist): artist is ArtistRecord => artist !== null);
   return { artists, months, comparison: { baselineAt: baselineTimestamp, latestAt: currentTimestamp }, refreshedAt: new Date().toISOString(), latestSourceObservation: allObserved[0] ?? null };
 }

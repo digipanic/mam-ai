@@ -99,10 +99,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   errorComponent: ErrorComponent,
 });
 
+// Applies the dark theme class before first paint, so a stored/system
+// preference for dark never flashes light first. Runs before HeadContent's
+// stylesheet link so it can't itself be delayed by CSS loading.
+const THEME_INIT_SCRIPT = `(function(){try{var t=localStorage.getItem("theme");var dark=t?t==="dark":window.matchMedia("(prefers-color-scheme: dark)").matches;if(dark)document.documentElement.classList.add("dark");}catch(e){}})();`;
+
 function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <head>
+        {/* eslint-disable-next-line react/no-danger -- static, no user input */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <HeadContent />
       </head>
       <body>

@@ -1,4 +1,4 @@
-import type { ArtistRecord, AudienceMonitorData, HistoricalPoint, MonthlyPoint } from "@/lib/audience-types";
+import type { ArtistRecord, AudienceMonitorData, HistoricalPoint, MonitoringStatus, MonthlyPoint } from "@/lib/audience-types";
 
 export const slugifyArtist = (name: string) => encodeURIComponent(name.toLocaleLowerCase());
 export const findArtist = (artists: ArtistRecord[], slug: string) => artists.find((artist) => slugifyArtist(artist.name) === slug);
@@ -61,6 +61,12 @@ export const monthlyConsistency = (artist: ArtistRecord) => { const points = val
 export const recordHigh = (artist: ArtistRecord) => { const points = validMonthlyPoints(artist); const latest = points.at(-1); return Boolean(latest && points.length > 1 && points.slice(0, -1).every((point) => latest.followers > point.followers)); };
 export const percentile = (value: number | null, values: (number | null)[]) => { if (value === null) return null; const valid = values.filter((item): item is number => item !== null).sort((a, b) => a - b); if (!valid.length) return null; return (valid.filter((item) => item <= value).length / valid.length) * 100; };
 export const platformCoverage = (data: AudienceMonitorData) => ({ instagram: data.artists.filter((artist) => artist.instagram.audience !== null).length, comparableInstagram: data.artists.filter((artist) => artist.instagram.change !== null && artist.instagram.baselineAt !== artist.instagram.observedAt).length, soundcloud: data.artists.filter((artist) => artist.soundcloud.audience !== null).length, residentAdvisor: data.artists.filter((artist) => artist.residentAdvisor.audience !== null).length, monthlyHistory: data.artists.filter((artist) => validMonthlyPoints(artist).length > 0).length });
+export const MONITORED_PLATFORMS = ["instagram", "soundcloud", "residentAdvisor"] as const;
+export type MonitoredPlatform = (typeof MONITORED_PLATFORMS)[number];
+export const platformLabel = (platform: MonitoredPlatform) => platform === "residentAdvisor" ? "Resident Advisor" : platform === "soundcloud" ? "SoundCloud" : "Instagram";
+export type MonitoringRow = { artist: ArtistRecord; platform: MonitoredPlatform; status: MonitoringStatus };
+export const monitoringRows = (data: AudienceMonitorData): MonitoringRow[] => data.artists.flatMap((artist) => MONITORED_PLATFORMS.map((platform) => ({ artist, platform, status: artist.monitoring[platform] })));
+export const monitoringIssues = (data: AudienceMonitorData) => monitoringRows(data).filter((row) => !row.status.ok);
 export const dashboardSummary = (data: AudienceMonitorData) => {
   const comparable = data.artists.filter((artist) => artist.instagram.change !== null && artist.instagram.growthPercent !== null && artist.instagram.baselineAt !== artist.instagram.observedAt);
   const currentRank = rank(data.artists, (artist) => artist.instagram.audience); const growthRank = rank(comparable, (artist) => artist.instagram.growthPercent); const gainRank = rank(comparable, (artist) => artist.instagram.change);

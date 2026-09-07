@@ -15,6 +15,7 @@ import { Route as DashboardArtistsRouteImport } from './routes/_dashboard.artist
 import { Route as DashboardCompareRouteImport } from './routes/_dashboard.compare'
 import { Route as DashboardInsightsRouteImport } from './routes/_dashboard.insights'
 import { Route as DashboardMethodologyRouteImport } from './routes/_dashboard.methodology'
+import { Route as DashboardMonitoringRouteImport } from './routes/_dashboard.monitoring'
 import { Route as DashboardMonthlyHistoryRouteImport } from './routes/_dashboard.monthly-history'
 import { Route as DashboardRankingsRouteImport } from './routes/_dashboard.rankings'
 import { Route as DashboardArtistsIndexRouteImport } from './routes/_dashboard.artists.index'
@@ -49,6 +50,11 @@ const DashboardMethodologyRoute = DashboardMethodologyRouteImport.update({
   path: '/methodology',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardMonitoringRoute = DashboardMonitoringRouteImport.update({
+  id: '/monitoring',
+  path: '/monitoring',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardMonthlyHistoryRoute = DashboardMonthlyHistoryRouteImport.update({
   id: '/monthly-history',
   path: '/monthly-history',
@@ -76,6 +82,7 @@ export interface FileRoutesByFullPath {
   '/compare': typeof DashboardCompareRoute
   '/insights': typeof DashboardInsightsRoute
   '/methodology': typeof DashboardMethodologyRoute
+  '/monitoring': typeof DashboardMonitoringRoute
   '/monthly-history': typeof DashboardMonthlyHistoryRoute
   '/rankings': typeof DashboardRankingsRoute
   '/artists/$artist': typeof DashboardArtistsArtistRoute
@@ -85,6 +92,7 @@ export interface FileRoutesByTo {
   '/compare': typeof DashboardCompareRoute
   '/insights': typeof DashboardInsightsRoute
   '/methodology': typeof DashboardMethodologyRoute
+  '/monitoring': typeof DashboardMonitoringRoute
   '/monthly-history': typeof DashboardMonthlyHistoryRoute
   '/rankings': typeof DashboardRankingsRoute
   '/': typeof DashboardIndexRoute
@@ -98,6 +106,7 @@ export interface FileRoutesById {
   '/_dashboard/compare': typeof DashboardCompareRoute
   '/_dashboard/insights': typeof DashboardInsightsRoute
   '/_dashboard/methodology': typeof DashboardMethodologyRoute
+  '/_dashboard/monitoring': typeof DashboardMonitoringRoute
   '/_dashboard/monthly-history': typeof DashboardMonthlyHistoryRoute
   '/_dashboard/rankings': typeof DashboardRankingsRoute
   '/_dashboard/': typeof DashboardIndexRoute
@@ -112,6 +121,7 @@ export interface FileRouteTypes {
     | '/compare'
     | '/insights'
     | '/methodology'
+    | '/monitoring'
     | '/monthly-history'
     | '/rankings'
     | '/artists/$artist'
@@ -121,6 +131,7 @@ export interface FileRouteTypes {
     | '/compare'
     | '/insights'
     | '/methodology'
+    | '/monitoring'
     | '/monthly-history'
     | '/rankings'
     | '/'
@@ -133,6 +144,7 @@ export interface FileRouteTypes {
     | '/_dashboard/compare'
     | '/_dashboard/insights'
     | '/_dashboard/methodology'
+    | '/_dashboard/monitoring'
     | '/_dashboard/monthly-history'
     | '/_dashboard/rankings'
     | '/_dashboard/'
@@ -188,6 +200,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardMethodologyRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/_dashboard/monitoring': {
+      id: '/_dashboard/monitoring'
+      path: '/monitoring'
+      fullPath: '/monitoring'
+      preLoaderRoute: typeof DashboardMonitoringRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/_dashboard/monthly-history': {
       id: '/_dashboard/monthly-history'
       path: '/monthly-history'
@@ -237,6 +256,7 @@ interface DashboardRouteChildren {
   DashboardCompareRoute: typeof DashboardCompareRoute
   DashboardInsightsRoute: typeof DashboardInsightsRoute
   DashboardMethodologyRoute: typeof DashboardMethodologyRoute
+  DashboardMonitoringRoute: typeof DashboardMonitoringRoute
   DashboardMonthlyHistoryRoute: typeof DashboardMonthlyHistoryRoute
   DashboardRankingsRoute: typeof DashboardRankingsRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
@@ -247,6 +267,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardCompareRoute: DashboardCompareRoute,
   DashboardInsightsRoute: DashboardInsightsRoute,
   DashboardMethodologyRoute: DashboardMethodologyRoute,
+  DashboardMonitoringRoute: DashboardMonitoringRoute,
   DashboardMonthlyHistoryRoute: DashboardMonthlyHistoryRoute,
   DashboardRankingsRoute: DashboardRankingsRoute,
   DashboardIndexRoute: DashboardIndexRoute,
