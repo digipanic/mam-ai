@@ -42,10 +42,16 @@ export const getAudienceMonitor = createServerFn({ method: "GET" }).handler(asyn
     .map(([at]) => at)
     .sort((a, b) => Date.parse(b) - Date.parse(a));
   const currentTimestamp = comparableTimestamps[0] ?? null;
-  // A same-week rerun is a fresh snapshot, not the period used for the current movement view.
-  // Keep the most recent roster-wide comparison that spans at least one week.
-  const baselineTimestamp = currentTimestamp
-    ? comparableTimestamps.find((at) => Date.parse(currentTimestamp) - Date.parse(at) >= 7 * 24 * 60 * 60 * 1000) ?? null
+  // Current movement always compares the latest complete roster snapshot against
+  // the latest complete snapshot from the preceding calendar month. This avoids
+  // treating repeat collection runs within a month as the reporting period.
+  const currentDate = currentTimestamp ? new Date(currentTimestamp) : null;
+  const baselineTimestamp = currentDate
+    ? comparableTimestamps.find((at) => {
+        const date = new Date(at);
+        return date.getFullYear() < currentDate.getFullYear()
+          || (date.getFullYear() === currentDate.getFullYear() && date.getMonth() < currentDate.getMonth());
+      }) ?? null
     : null;
   const allObserved = [...instagram.map((r) => r.at), ...soundcloud.map((r) => r.at), ...ra.map((r) => r.at)].filter((value): value is string => Boolean(value)).sort((a,b) => Date.parse(b) - Date.parse(a));
   const artists: ArtistRecord[] = roster.map((row) => {
