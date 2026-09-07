@@ -37,9 +37,16 @@ export const getAudienceMonitor = createServerFn({ method: "GET" }).handler(asyn
   const months = [...new Set(monthlyRows.map((row) => text(row["Month"])).filter((value): value is string => Boolean(value)))].sort();
   const observationGroups = new Map<string, number>();
   instagram.forEach((row) => { if (row.at) observationGroups.set(row.at, (observationGroups.get(row.at) ?? 0) + 1); });
-  const comparableTimestamps = [...observationGroups.entries()].filter(([, count]) => count >= Math.max(2, roster.length * 0.6)).map(([at]) => at).sort((a, b) => Date.parse(b) - Date.parse(a));
+  const comparableTimestamps = [...observationGroups.entries()]
+    .filter(([, count]) => count >= Math.max(2, roster.length * 0.6))
+    .map(([at]) => at)
+    .sort((a, b) => Date.parse(b) - Date.parse(a));
   const currentTimestamp = comparableTimestamps[0] ?? null;
-  const baselineTimestamp = comparableTimestamps[1] ?? null;
+  // A same-week rerun is a fresh snapshot, not the period used for the current movement view.
+  // Keep the most recent roster-wide comparison that spans at least one week.
+  const baselineTimestamp = currentTimestamp
+    ? comparableTimestamps.find((at) => Date.parse(currentTimestamp) - Date.parse(at) >= 7 * 24 * 60 * 60 * 1000) ?? null
+    : null;
   const allObserved = [...instagram.map((r) => r.at), ...soundcloud.map((r) => r.at), ...ra.map((r) => r.at)].filter((value): value is string => Boolean(value)).sort((a,b) => Date.parse(b) - Date.parse(a));
   const artists: ArtistRecord[] = roster.map((row) => {
     const name = text(row["Artist"]); if (!name) return null;
