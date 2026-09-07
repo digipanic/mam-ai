@@ -1,7 +1,8 @@
-export type PlatformMetric = { audience: number | null; observedAt: string | null };
+export type ObservationSource = "Minor AM monitoring" | "Viberate" | "Modash" | "Historical checkpoint";
+export type PlatformMetric = { audience: number | null; observedAt: string | null; source: ObservationSource | null };
 
-export type MonthlyPoint = { month: string; followers: number | null };
-export type HistoricalPoint = { date: string; followers: number; source: string };
+export type MonthlyPoint = { month: string; followers: number | null; source: ObservationSource | null; observedAt: string | null };
+export type HistoricalPoint = { date: string; followers: number; source: ObservationSource };
 
 export type ArtistRecord = {
   name: string;
