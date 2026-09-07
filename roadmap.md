@@ -1,1 +1,1 @@
-- Clear all preview typecheck errors, including pre-existing errors.
+- Add recorded monthly context and longer-term momentum to Pulse.
