@@ -1,2 +1,3 @@
 - Add recorded monthly context and longer-term momentum to Pulse.
 - Add roster health, monthly pace, consistency, platform coverage, and ranking context from live audience data.
+- Expand each artist profile into a complete live record view with all safe available audience data.
