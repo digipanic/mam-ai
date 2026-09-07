@@ -9,50 +9,236 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as DashboardRouteImport } from './routes/_dashboard'
+import { Route as DashboardIndexRouteImport } from './routes/_dashboard.index'
+import { Route as DashboardArtistsRouteImport } from './routes/_dashboard.artists'
+import { Route as DashboardCompareRouteImport } from './routes/_dashboard.compare'
+import { Route as DashboardInsightsRouteImport } from './routes/_dashboard.insights'
+import { Route as DashboardMethodologyRouteImport } from './routes/_dashboard.methodology'
+import { Route as DashboardMonthlyHistoryRouteImport } from './routes/_dashboard.monthly-history'
+import { Route as DashboardRankingsRouteImport } from './routes/_dashboard.rankings'
+import { Route as DashboardArtistsArtistRouteImport } from './routes/_dashboard.artists.$artist'
 
-const IndexRoute = IndexRouteImport.update({
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/_dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardIndexRoute = DashboardIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardArtistsRoute = DashboardArtistsRouteImport.update({
+  id: '/artists',
+  path: '/artists',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardCompareRoute = DashboardCompareRouteImport.update({
+  id: '/compare',
+  path: '/compare',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardInsightsRoute = DashboardInsightsRouteImport.update({
+  id: '/insights',
+  path: '/insights',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardMethodologyRoute = DashboardMethodologyRouteImport.update({
+  id: '/methodology',
+  path: '/methodology',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardMonthlyHistoryRoute = DashboardMonthlyHistoryRouteImport.update({
+  id: '/monthly-history',
+  path: '/monthly-history',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardRankingsRoute = DashboardRankingsRouteImport.update({
+  id: '/rankings',
+  path: '/rankings',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardArtistsArtistRoute = DashboardArtistsArtistRouteImport.update({
+  id: '/$artist',
+  path: '/$artist',
+  getParentRoute: () => DashboardArtistsRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
+  '/': typeof DashboardIndexRoute
+  '/artists': typeof DashboardArtistsRouteWithChildren
+  '/compare': typeof DashboardCompareRoute
+  '/insights': typeof DashboardInsightsRoute
+  '/methodology': typeof DashboardMethodologyRoute
+  '/monthly-history': typeof DashboardMonthlyHistoryRoute
+  '/rankings': typeof DashboardRankingsRoute
+  '/artists/$artist': typeof DashboardArtistsArtistRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
+  '/artists': typeof DashboardArtistsRouteWithChildren
+  '/compare': typeof DashboardCompareRoute
+  '/insights': typeof DashboardInsightsRoute
+  '/methodology': typeof DashboardMethodologyRoute
+  '/monthly-history': typeof DashboardMonthlyHistoryRoute
+  '/rankings': typeof DashboardRankingsRoute
+  '/': typeof DashboardIndexRoute
+  '/artists/$artist': typeof DashboardArtistsArtistRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
+  '/_dashboard': typeof DashboardRouteWithChildren
+  '/_dashboard/artists': typeof DashboardArtistsRouteWithChildren
+  '/_dashboard/compare': typeof DashboardCompareRoute
+  '/_dashboard/insights': typeof DashboardInsightsRoute
+  '/_dashboard/methodology': typeof DashboardMethodologyRoute
+  '/_dashboard/monthly-history': typeof DashboardMonthlyHistoryRoute
+  '/_dashboard/rankings': typeof DashboardRankingsRoute
+  '/_dashboard/': typeof DashboardIndexRoute
+  '/_dashboard/artists/$artist': typeof DashboardArtistsArtistRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/artists'
+    | '/compare'
+    | '/insights'
+    | '/methodology'
+    | '/monthly-history'
+    | '/rankings'
+    | '/artists/$artist'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/artists'
+    | '/compare'
+    | '/insights'
+    | '/methodology'
+    | '/monthly-history'
+    | '/rankings'
+    | '/'
+    | '/artists/$artist'
+  id:
+    | '__root__'
+    | '/_dashboard'
+    | '/_dashboard/artists'
+    | '/_dashboard/compare'
+    | '/_dashboard/insights'
+    | '/_dashboard/methodology'
+    | '/_dashboard/monthly-history'
+    | '/_dashboard/rankings'
+    | '/_dashboard/'
+    | '/_dashboard/artists/$artist'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
+  DashboardRoute: typeof DashboardRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
+    '/_dashboard': {
+      id: '/_dashboard'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_dashboard/': {
+      id: '/_dashboard/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof DashboardIndexRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/_dashboard/artists': {
+      id: '/_dashboard/artists'
+      path: '/artists'
+      fullPath: '/artists'
+      preLoaderRoute: typeof DashboardArtistsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/_dashboard/compare': {
+      id: '/_dashboard/compare'
+      path: '/compare'
+      fullPath: '/compare'
+      preLoaderRoute: typeof DashboardCompareRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/_dashboard/insights': {
+      id: '/_dashboard/insights'
+      path: '/insights'
+      fullPath: '/insights'
+      preLoaderRoute: typeof DashboardInsightsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/_dashboard/methodology': {
+      id: '/_dashboard/methodology'
+      path: '/methodology'
+      fullPath: '/methodology'
+      preLoaderRoute: typeof DashboardMethodologyRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/_dashboard/monthly-history': {
+      id: '/_dashboard/monthly-history'
+      path: '/monthly-history'
+      fullPath: '/monthly-history'
+      preLoaderRoute: typeof DashboardMonthlyHistoryRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/_dashboard/rankings': {
+      id: '/_dashboard/rankings'
+      path: '/rankings'
+      fullPath: '/rankings'
+      preLoaderRoute: typeof DashboardRankingsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/_dashboard/artists/$artist': {
+      id: '/_dashboard/artists/$artist'
+      path: '/$artist'
+      fullPath: '/artists/$artist'
+      preLoaderRoute: typeof DashboardArtistsArtistRouteImport
+      parentRoute: typeof DashboardArtistsRoute
     }
   }
 }
 
+interface DashboardArtistsRouteChildren {
+  DashboardArtistsArtistRoute: typeof DashboardArtistsArtistRoute
+}
+
+const DashboardArtistsRouteChildren: DashboardArtistsRouteChildren = {
+  DashboardArtistsArtistRoute: DashboardArtistsArtistRoute,
+}
+
+const DashboardArtistsRouteWithChildren =
+  DashboardArtistsRoute._addFileChildren(DashboardArtistsRouteChildren)
+
+interface DashboardRouteChildren {
+  DashboardArtistsRoute: typeof DashboardArtistsRouteWithChildren
+  DashboardCompareRoute: typeof DashboardCompareRoute
+  DashboardInsightsRoute: typeof DashboardInsightsRoute
+  DashboardMethodologyRoute: typeof DashboardMethodologyRoute
+  DashboardMonthlyHistoryRoute: typeof DashboardMonthlyHistoryRoute
+  DashboardRankingsRoute: typeof DashboardRankingsRoute
+  DashboardIndexRoute: typeof DashboardIndexRoute
+}
+
+const DashboardRouteChildren: DashboardRouteChildren = {
+  DashboardArtistsRoute: DashboardArtistsRouteWithChildren,
+  DashboardCompareRoute: DashboardCompareRoute,
+  DashboardInsightsRoute: DashboardInsightsRoute,
+  DashboardMethodologyRoute: DashboardMethodologyRoute,
+  DashboardMonthlyHistoryRoute: DashboardMonthlyHistoryRoute,
+  DashboardRankingsRoute: DashboardRankingsRoute,
+  DashboardIndexRoute: DashboardIndexRoute,
+}
+
+const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
+  DashboardRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
+  DashboardRoute: DashboardRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
