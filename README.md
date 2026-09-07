@@ -1,26 +1,55 @@
-# Audience Source
+# Minor AM Audience Intelligence
 
-Use the connected Google Sheets integration as the production source of truth for the Minor AM Audience Monitor. Find and inspect the Google Sheet named “Minor AM — Social Media Monitoring Sheet”. Read the actual tabs, columns, timestamps and values before changing the dashboard. Use the live sheet data for the roster, latest Instagram/SoundCloud/Resident Advisor metrics, historical Instagram data and observation dates. Calculate dashboard metrics dynamically from the sheet rather than hard-coding the September snapshot. Missing data must remain missing, never zero. Keep Instagram, SoundCloud and Resident Advisor separate and never sum them into a total audience. Preserve actual observation dates. Add a visible Last refreshed timestamp and a graceful cached/fallback state if Google Sheets is temporarily unavailable. Do not expose credentials, formulas, scraping infrastructure, internal notes or data-quality debugging in the public/work-facing UI. Once connected, verify that Jennifer Loveless, Kiss Nuka, Zvrra and Aöcram all load correctly and that new rows added to the Google Sheet will automatically appear in the dashboard without requiring code changes.
+Internal dashboard tracking the Minor AM roster across Instagram, SoundCloud,
+and Resident Advisor.
 
-This project was built with [Lovable](https://lovable.dev).
+## Architecture
 
-**Live app**: https://mam-ai.lovable.app
+```
+Monitoring scripts → Google Sheets → Google Sheets API → this app (TanStack Start) → Vercel
+```
 
-## Build with Lovable
+The Google Sheet ("Minor AM — Social Media Monitoring Sheet") is the
+production source of truth. `src/lib/audience-monitor.functions.ts` is a
+server function (runs server-side only, never shipped to the browser) that
+reads the Roster, Instagram/SoundCloud/Resident Advisor snapshot tabs, the
+monthly-history tab, and the Viberate/Modash historical tab directly from the
+Google Sheets API, then normalizes them into the shape every route consumes
+via `useAudienceMonitor()`.
 
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/ec1df76a-079e-4e4f-88c1-a0a919ade38f).
+Data rules the normalization enforces — see `AGENTS.md` for the full list:
 
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
+- The roster is read from the Roster tab; nothing is hard-coded.
+- Missing data stays missing — never coerced to zero.
+- Instagram, SoundCloud, and Resident Advisor are never summed or averaged.
+- Every metric keeps its source visible (Minor AM monitoring / Viberate /
+  Modash).
+- Monthly growth always compares two distinct calendar months, using one
+  canonical observation per artist/platform/month.
+- Month-only historical data (e.g. some Modash exports) is never given an
+  invented day.
+
+## Environment
+
+Set `GOOGLE_SHEETS_API_KEY` (a Google API key with the Sheets API enabled)
+as a server-side environment variable — in Vercel this is a Project
+Environment Variable, never a `VITE_`-prefixed one, so it's never bundled
+into client code. The sheet must be shared as "Anyone with the link can
+view" for a plain API key to read it; if it needs to stay unlisted, switch
+`getBatch` in `audience-monitor.functions.ts` to a service-account bearer
+token instead and share the sheet with that service account's email.
 
 ## Development
-
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
 
 ```sh
 git clone <this-repository-url>
 cd <repository-name>
-npm i
-npm run dev
+bun install   # or npm install
+GOOGLE_SHEETS_API_KEY=... bun run dev
 ```
+
+## Deployment
+
+Deploys to Vercel with no extra configuration — `vite build` runs nitro's
+`vercel` preset, which emits the standard Vercel Build Output. Set
+`GOOGLE_SHEETS_API_KEY` in the Vercel project's environment variables.

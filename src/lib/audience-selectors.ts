@@ -7,6 +7,9 @@ export const formatSigned = (value: number | null | undefined) => value == null 
 export const formatPercent = (value: number | null | undefined) => value == null ? "—" : `${value > 0 ? "+" : ""}${value.toFixed(2)}%`;
 export const formatDate = (value: string | null | undefined, time = false) => {
   if (!value) return "—";
+  // A bare "YYYY-MM" checkpoint (month-only Modash/Viberate data) never had a
+  // recorded day — show the month instead of inventing "1 <Month> <Year>".
+  if (/^\d{4}-\d{2}$/.test(value)) return formatMonth(value);
   const date = new Date(value);
   return Number.isNaN(date.valueOf()) ? value : date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", ...(time ? { hour: "2-digit", minute: "2-digit" } : {}) });
 };
