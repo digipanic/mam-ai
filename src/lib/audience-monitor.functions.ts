@@ -65,7 +65,7 @@ export const getAudienceMonitor = createServerFn({ method: "GET" }).handler(asyn
     const unifiedInstagram = [...instagram.filter((item) => item.name === name), ...instagramHistory.map((item) => ({ value: item.followers, at: item.date, source: item.source }))];
     const unifiedSoundcloud = [...soundcloud.filter((item) => item.name === name), ...soundcloudHistory.map((item) => ({ value: item.followers, at: item.date, source: item.source }))];
     const currentInstagram = latest(unifiedInstagram);
-    const baseline = [...unifiedInstagram].filter((item) => item.at && currentInstagram.observedAt && Date.parse(item.at) < Date.parse(currentInstagram.observedAt)).sort((a, b) => Date.parse(b.at ?? "") - Date.parse(a.at ?? ""))[0];
+    const baseline = [...unifiedInstagram].filter((item) => item.at && currentInstagram.observedAt && monthOf(item.at) < monthOf(currentInstagram.observedAt)).sort((a, b) => Date.parse(b.at ?? "") - Date.parse(a.at ?? ""))[0];
     const change = currentInstagram.audience !== null && baseline ? currentInstagram.audience - baseline.value : null;
     const monthlyHistory: MonthlyPoint[] = months.map((month) => {
       const livePoint = instagram.filter((item) => item.name === name && item.at && monthOf(item.at) === month).sort((a, b) => Date.parse(b.at ?? "") - Date.parse(a.at ?? ""))[0];
