@@ -26,14 +26,15 @@ async function getBatch(ranges: string[]) {
 }
 
 export const getAudienceMonitor = createServerFn({ method: "GET" }).handler(async (): Promise<AudienceMonitorData> => {
-  const [rosterValues, instagramValues, soundcloudValues, raValues, monthlyValues] = await getBatch([
-    "Roster!A1:O1000", "Instagram Profile Snapshots!A1:T1500", "SoundCloud Profile Snapshots!A1:P1000", "Resident Advisor Snapshots!A1:N1000", "Monthly Historical Followers!A1:F1000",
+  const [rosterValues, instagramValues, soundcloudValues, raValues, monthlyValues, historicalValues] = await getBatch([
+    "Roster!A1:O1000", "Instagram Profile Snapshots!A1:T1500", "SoundCloud Profile Snapshots!A1:P1000", "Resident Advisor Snapshots!A1:N1000", "Monthly Historical Followers!A1:F1000", "Viberate Historical Data!A1:L12000",
   ]);
   const roster = keyedRows(rosterValues ?? []);
   const instagram = keyedRows(instagramValues ?? []).map((row) => ({ name: text(row["Artist"]), value: number(row["Followers"]), at: iso(row["Collected At"]) ?? iso(row["Raw Timestamp"]), status: text(row["Source Status"]) })).filter((row) => row.name && row.value !== null && row.status === "OK") as { name: string; value: number; at: string | null; status: string | null }[];
   const soundcloud = keyedRows(soundcloudValues ?? []).map((row) => ({ name: text(row["Artist"]), value: number(row["Followers"]), at: iso(row["Collected At"]), status: text(row["Source Status"]) })).filter((row) => row.name && row.status === "OK") as { name: string; value: number | null; at: string | null; status: string | null }[];
   const ra = keyedRows(raValues ?? []).map((row) => ({ name: text(row["Artist"]), value: number(row["Followers / Fans"]), at: iso(row["Raw Timestamp"]) ?? iso(row["Collected At"]), status: text(row["Source Status"]) })).filter((row) => row.name && row.status === "OK") as { name: string; value: number | null; at: string | null; status: string | null }[];
   const monthlyRows = keyedRows(monthlyValues ?? []);
+  const historicalRows = keyedRows(historicalValues ?? []).map((row) => ({ name: text(row["Artist"]), platform: text(row["Platform"]), date: text(row["Date"]), followers: number(row["Followers"]), source: text(row["Source"]) ?? "Historical checkpoint" })).filter((row) => row.name && row.platform && row.date && row.followers !== null) as { name: string; platform: string; date: string; followers: number; source: string }[];
   const months = [...new Set(monthlyRows.map((row) => text(row["Month"])).filter((value): value is string => Boolean(value)))].sort();
   const observationGroups = new Map<string, number>();
   instagram.forEach((row) => { if (row.at) observationGroups.set(row.at, (observationGroups.get(row.at) ?? 0) + 1); });
@@ -60,7 +61,8 @@ export const getAudienceMonitor = createServerFn({ method: "GET" }).handler(asyn
     const baseline = instagram.find((item) => item.name === name && item.at === baselineTimestamp)?.value ?? null;
     const change = current !== null && baseline !== null ? current - baseline : null;
     const monthlyHistory: MonthlyPoint[] = months.map((month) => ({ month, followers: number(monthlyRows.find((item) => text(item["Artist"]) === name && text(item["Month"]) === month)?.["Followers"]) }));
-    return { name, location: text(row["Location"]), role: text(row["Role"]), instagramHandle: text(row["Instagram Handle"]), urls: { instagram: text(row["Instagram URL"]), soundcloud: text(row["SoundCloud URL"]), residentAdvisor: text(row["Resident Advisor URL"]) }, instagram: { ...latest(instagram.filter((item) => item.name === name)), baseline, baselineAt: baseline !== null ? baselineTimestamp : null, change, growthPercent: change !== null && baseline ? (change / baseline) * 100 : null }, soundcloud: latest(soundcloud.filter((item) => item.name === name && item.value !== null) as { value: number; at: string | null }[]), residentAdvisor: latest(ra.filter((item) => item.name === name && item.value !== null) as { value: number; at: string | null }[]), monthlyHistory };
+     const historyFor = (platform: string) => historicalRows.filter((item) => item.name === name && item.platform.toLocaleLowerCase() === platform).sort((a, b) => a.date.localeCompare(b.date)).map(({ date, followers, source }) => ({ date, followers, source }));
+     return { name, location: text(row["Location"]), role: text(row["Role"]), instagramHandle: text(row["Instagram Handle"]), urls: { instagram: text(row["Instagram URL"]), soundcloud: text(row["SoundCloud URL"]), residentAdvisor: text(row["Resident Advisor URL"]) }, instagram: { ...latest(instagram.filter((item) => item.name === name)), baseline, baselineAt: baseline !== null ? baselineTimestamp : null, change, growthPercent: change !== null && baseline ? (change / baseline) * 100 : null }, soundcloud: latest(soundcloud.filter((item) => item.name === name && item.value !== null) as { value: number; at: string | null }[]), residentAdvisor: latest(ra.filter((item) => item.name === name && item.value !== null) as { value: number; at: string | null }[]), monthlyHistory, historical: { instagram: historyFor("instagram"), soundcloud: historyFor("soundcloud") } };
   }).filter((artist): artist is ArtistRecord => artist !== null);
   return { artists, months, comparison: { baselineAt: baselineTimestamp, latestAt: currentTimestamp }, refreshedAt: new Date().toISOString(), latestSourceObservation: allObserved[0] ?? null };
 });
