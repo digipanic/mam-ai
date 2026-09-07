@@ -1,0 +1,1 @@
+- Clear all preview typecheck errors, including pre-existing errors.
