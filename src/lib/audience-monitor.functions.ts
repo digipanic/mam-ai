@@ -82,17 +82,17 @@ export const getAudienceMonitor = createServerFn({ method: "GET" }).handler(asyn
   const params = new URLSearchParams({ valueRenderOption: "UNFORMATTED_VALUE", dateTimeRenderOption: "FORMATTED_STRING" });
   ranges.forEach((range) => params.append("ranges", range));
   const payload = await googleSheetsGet(`/spreadsheets/${SPREADSHEET_ID}/values:batchGet`, params);
-  const rawRanges = (payload.valueRanges ?? []) as { values?: Row[] }[];
+  const rawRanges = (payload["valueRanges"] ?? []) as { values?: Row[] }[];
   const [rosterRows = [], dashboardRows = [], trackerRows = []] = rawRanges.map((range) => range.values ?? []);
 
   const roster = keyedRows(rosterRows);
-  const dashboard = new Map(keyedRows(dashboardRows).map((row) => [text(row.Artist), row]));
+  const dashboard = new Map(keyedRows(dashboardRows).map((row) => [text(row["Artist"]), row]));
   const history = new Map<string, { date: string; followers: number }[]>();
   keyedRows(trackerRows).forEach((row) => {
-    if (text(row.Platform) !== "Instagram") return;
-    const artist = text(row.Artist);
-    const date = text(row.Date);
-    const followers = number(row.Followers);
+    if (text(row["Platform"]) !== "Instagram") return;
+    const artist = text(row["Artist"]);
+    const date = text(row["Date"]);
+    const followers = number(row["Followers"]);
     if (!artist || !date || followers === null) return;
     history.set(artist, [...(history.get(artist) ?? []), { date, followers }]);
   });
@@ -103,13 +103,13 @@ export const getAudienceMonitor = createServerFn({ method: "GET" }).handler(asyn
   return {
     artists: roster
       .map((row) => {
-        const name = text(row.Artist);
+        const name = text(row["Artist"]);
         if (!name) return null;
         const current = dashboard.get(name);
         return {
           name,
-          location: text(row.Location),
-          role: text(row.Role),
+          location: text(row["Location"]),
+          role: text(row["Role"]),
           instagramHandle: text(row["Instagram Handle"]),
           metrics: {
             instagram: metric(current, "Instagram"),

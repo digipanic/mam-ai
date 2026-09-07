@@ -43,7 +43,7 @@ function Index() {
   const [selectedPlatform, setSelectedPlatform] = useState<Platform>("instagram");
   const query = useQuery({ queryKey: ["audience-monitor"], queryFn: () => fetchMonitor(), refetchInterval: 300000, staleTime: 240000 });
   const data = query.data as AudienceMonitorData | undefined;
-  const selected = platforms.find((platform) => platform.id === selectedPlatform) ?? platforms[0];
+  const selected = platforms.find((platform) => platform.id === selectedPlatform) ?? { id: "instagram" as Platform, label: "Instagram", short: "IG" };
   const leaders = useMemo(() => data?.artists.slice().sort((a, b) => (b.metrics[selectedPlatform].audience ?? -1) - (a.metrics[selectedPlatform].audience ?? -1)).slice(0, 5) ?? [], [data, selectedPlatform]);
   const maxAudience = Math.max(...leaders.map((artist) => artist.metrics[selectedPlatform].audience ?? 0), 1);
 
