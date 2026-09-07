@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as DashboardRouteImport } from './routes/_dashboard'
 import { Route as DashboardIndexRouteImport } from './routes/_dashboard.index'
+import { Route as DashboardArtistsRouteImport } from './routes/_dashboard.artists'
 import { Route as DashboardCompareRouteImport } from './routes/_dashboard.compare'
 import { Route as DashboardInsightsRouteImport } from './routes/_dashboard.insights'
 import { Route as DashboardMethodologyRouteImport } from './routes/_dashboard.methodology'
@@ -26,6 +27,11 @@ const DashboardRoute = DashboardRouteImport.update({
 const DashboardIndexRoute = DashboardIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardArtistsRoute = DashboardArtistsRouteImport.update({
+  id: '/artists',
+  path: '/artists',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardCompareRoute = DashboardCompareRouteImport.update({
@@ -54,18 +60,19 @@ const DashboardRankingsRoute = DashboardRankingsRouteImport.update({
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardArtistsIndexRoute = DashboardArtistsIndexRouteImport.update({
-  id: '/artists/',
-  path: '/artists/',
-  getParentRoute: () => DashboardRoute,
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashboardArtistsRoute,
 } as any)
 const DashboardArtistsArtistRoute = DashboardArtistsArtistRouteImport.update({
-  id: '/artists/$artist',
-  path: '/artists/$artist',
-  getParentRoute: () => DashboardRoute,
+  id: '/$artist',
+  path: '/$artist',
+  getParentRoute: () => DashboardArtistsRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof DashboardIndexRoute
+  '/artists': typeof DashboardArtistsRouteWithChildren
   '/compare': typeof DashboardCompareRoute
   '/insights': typeof DashboardInsightsRoute
   '/methodology': typeof DashboardMethodologyRoute
@@ -87,6 +94,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_dashboard': typeof DashboardRouteWithChildren
+  '/_dashboard/artists': typeof DashboardArtistsRouteWithChildren
   '/_dashboard/compare': typeof DashboardCompareRoute
   '/_dashboard/insights': typeof DashboardInsightsRoute
   '/_dashboard/methodology': typeof DashboardMethodologyRoute
@@ -100,6 +108,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/artists'
     | '/compare'
     | '/insights'
     | '/methodology'
@@ -120,6 +129,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/_dashboard'
+    | '/_dashboard/artists'
     | '/_dashboard/compare'
     | '/_dashboard/insights'
     | '/_dashboard/methodology'
@@ -148,6 +158,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof DashboardIndexRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/_dashboard/artists': {
+      id: '/_dashboard/artists'
+      path: '/artists'
+      fullPath: '/artists'
+      preLoaderRoute: typeof DashboardArtistsRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/_dashboard/compare': {
@@ -187,41 +204,52 @@ declare module '@tanstack/react-router' {
     }
     '/_dashboard/artists/': {
       id: '/_dashboard/artists/'
-      path: '/artists'
+      path: '/'
       fullPath: '/artists/'
       preLoaderRoute: typeof DashboardArtistsIndexRouteImport
-      parentRoute: typeof DashboardRoute
+      parentRoute: typeof DashboardArtistsRoute
     }
     '/_dashboard/artists/$artist': {
       id: '/_dashboard/artists/$artist'
-      path: '/artists/$artist'
+      path: '/$artist'
       fullPath: '/artists/$artist'
       preLoaderRoute: typeof DashboardArtistsArtistRouteImport
-      parentRoute: typeof DashboardRoute
+      parentRoute: typeof DashboardArtistsRoute
     }
   }
 }
 
+interface DashboardArtistsRouteChildren {
+  DashboardArtistsArtistRoute: typeof DashboardArtistsArtistRoute
+  DashboardArtistsIndexRoute: typeof DashboardArtistsIndexRoute
+}
+
+const DashboardArtistsRouteChildren: DashboardArtistsRouteChildren = {
+  DashboardArtistsArtistRoute: DashboardArtistsArtistRoute,
+  DashboardArtistsIndexRoute: DashboardArtistsIndexRoute,
+}
+
+const DashboardArtistsRouteWithChildren =
+  DashboardArtistsRoute._addFileChildren(DashboardArtistsRouteChildren)
+
 interface DashboardRouteChildren {
+  DashboardArtistsRoute: typeof DashboardArtistsRouteWithChildren
   DashboardCompareRoute: typeof DashboardCompareRoute
   DashboardInsightsRoute: typeof DashboardInsightsRoute
   DashboardMethodologyRoute: typeof DashboardMethodologyRoute
   DashboardMonthlyHistoryRoute: typeof DashboardMonthlyHistoryRoute
   DashboardRankingsRoute: typeof DashboardRankingsRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
-  DashboardArtistsArtistRoute: typeof DashboardArtistsArtistRoute
-  DashboardArtistsIndexRoute: typeof DashboardArtistsIndexRoute
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
+  DashboardArtistsRoute: DashboardArtistsRouteWithChildren,
   DashboardCompareRoute: DashboardCompareRoute,
   DashboardInsightsRoute: DashboardInsightsRoute,
   DashboardMethodologyRoute: DashboardMethodologyRoute,
   DashboardMonthlyHistoryRoute: DashboardMonthlyHistoryRoute,
   DashboardRankingsRoute: DashboardRankingsRoute,
   DashboardIndexRoute: DashboardIndexRoute,
-  DashboardArtistsArtistRoute: DashboardArtistsArtistRoute,
-  DashboardArtistsIndexRoute: DashboardArtistsIndexRoute,
 }
 
 const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
