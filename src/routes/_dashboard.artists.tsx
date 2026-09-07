@@ -1,3 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router"; import { useState } from "react"; import { ArtistGrid, RosterTable } from "@/components/audience/artist-list"; import { PageFrame, Panel } from "@/components/audience/page-frame"; import { useAudienceMonitor } from "@/hooks/use-audience-monitor";
-export const Route=createFileRoute("/_dashboard/artists")({head:()=>({meta:[{title:"Artists | Minor AM Audience Intelligence"},{name:"description",content:"Browse live audience intelligence across the Minor AM roster."},{property:"og:title",content:"Artists | Minor AM Audience Intelligence"},{property:"og:description",content:"Browse live audience intelligence across the Minor AM roster."},{property:"og:type",content:"website"},{name:"twitter:card",content:"summary"}]}),component:Artists});
-function Artists(){const {data}=useAudienceMonitor(); const [search,setSearch]=useState(''); const [view,setView]=useState<'grid'|'table'>('grid'); if(!data)return null; const artists=data.artists.filter(a=>a.name.toLowerCase().includes(search.toLowerCase())); return <PageFrame eyebrow="Artists" title="The full roster." description="Current audience, exact-period Instagram movement, and recorded monthly history."><div className="mb-7 flex flex-wrap justify-between gap-3"><input aria-label="Search artists" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search artists" className="h-9 w-64 border border-input bg-background px-3 text-sm outline-none focus:ring-1 focus:ring-ring"/><div className="flex border border-border text-xs"><button onClick={()=>setView('grid')} className={`px-3 ${view==='grid'?'bg-secondary':''}`}>Browse</button><button onClick={()=>setView('table')} className={`px-3 ${view==='table'?'bg-secondary':''}`}>Table</button></div></div>{view==='grid'?<ArtistGrid artists={artists}/>:<RosterTable artists={artists}/>}</PageFrame>}
+import { createFileRoute, Outlet } from "@tanstack/react-router";
+
+export const Route = createFileRoute("/_dashboard/artists")({
+  component: ArtistsLayout,
+});
+
+function ArtistsLayout() {
+  return <Outlet />;
+}
