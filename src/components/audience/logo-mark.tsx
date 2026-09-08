@@ -1,20 +1,26 @@
-// Lightweight inline mark, replacing the former Lovable-hosted PNG (served
-// from their CDN, unreachable once the app runs outside Lovable's platform).
+// Minor AM's actual mark (the same pinwheel already used as the browser
+// favicon) recolored via a CSS mask instead of rendered as a flat image, so
+// it stays legible against both the light and dark theme backgrounds — the
+// source asset's pale sage tone nearly disappears against the light theme's
+// cream background otherwise.
 export function LogoMark({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 40 40" role="img" aria-hidden="true" className={className}>
-      <rect x="0.5" y="0.5" width="39" height="39" rx="9.5" fill="var(--primary)" />
-      <text
-        x="50%"
-        y="54%"
-        textAnchor="middle"
-        dominantBaseline="middle"
-        fill="var(--primary-foreground)"
-        fontFamily="ui-serif, Georgia, serif"
-        fontSize="20"
-      >
-        M
-      </text>
-    </svg>
+    <span
+      role="img"
+      aria-hidden="true"
+      className={className}
+      style={{
+        display: "inline-block",
+        backgroundColor: "var(--primary)",
+        WebkitMaskImage: "url(/favicon.png)",
+        maskImage: "url(/favicon.png)",
+        WebkitMaskSize: "contain",
+        maskSize: "contain",
+        WebkitMaskRepeat: "no-repeat",
+        maskRepeat: "no-repeat",
+        WebkitMaskPosition: "center",
+        maskPosition: "center",
+      }}
+    />
   );
 }
