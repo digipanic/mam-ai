@@ -83,7 +83,10 @@ async function getBatch(ranges: string[]) {
   return (payload.valueRanges ?? []).map((range) => range.values ?? []);
 }
 
-const RANGES = ["Roster!A1:O1000", "Instagram Profile Snapshots!A1:T1500", "SoundCloud Profile Snapshots!A1:P1000", "Resident Advisor Snapshots!A1:N1000", "Monthly Historical Followers!A1:F1000", "Viberate Historical Data!A1:L12000"];
+// Open-ended column ranges (no row cap) — the previous fixed row bounds
+// (e.g. "A1:T1500") would silently stop returning new rows once live
+// monitoring + historical backfill grew past them, with no error to notice.
+const RANGES = ["Roster!A:O", "Instagram Profile Snapshots!A:T", "SoundCloud Profile Snapshots!A:P", "Resident Advisor Snapshots!A:N", "Monthly Historical Followers!A:F", "Viberate Historical Data!A:L"];
 
 // Pure normalization over already-fetched sheet rows — kept separate from the
 // server function so it can be exercised directly in tests without needing a
@@ -105,7 +108,11 @@ export function buildAudienceMonitorData(batches: Row[][]): AudienceMonitorData 
   const raAttempts = asAttempts(raRows);
   const monthlyRows = keyedRows(monthlyValues ?? []);
   const historicalRows = keyedRows(historicalValues ?? []).map((row) => ({ name: text(row["Artist"]), platform: text(row["Platform"]), date: iso(row["Date"]), followers: number(row["Followers"]), source: sourceName(text(row["Source"])) })).filter((row) => row.name && row.platform && row.date && row.followers !== null) as { name: string; platform: string; date: string; followers: number; source: ObservationSource }[];
-  const months = [...new Set([...monthlyRows.map((row) => normalizedMonth(row["Month"])), ...historicalRows.filter((row) => row.platform.toLowerCase() === "instagram").map((row) => monthOf(row.date))].filter((value): value is string => Boolean(value)))].sort();
+  // Months come from all three Instagram sources, not just the two backfill
+  // tabs — a month with only live Minor AM observations and no matching
+  // Viberate/Modash or stored-monthly row (the normal case once backfill
+  // stops and live monitoring is the only thing running) must still show up.
+  const months = [...new Set([...monthlyRows.map((row) => normalizedMonth(row["Month"])), ...historicalRows.filter((row) => row.platform.toLowerCase() === "instagram").map((row) => monthOf(row.date)), ...instagram.map((row) => (row.at ? monthOf(row.at) : null))].filter((value): value is string => Boolean(value)))].sort();
   const observationGroups = new Map<string, number>();
   instagram.forEach((row) => { if (row.at) observationGroups.set(row.at, (observationGroups.get(row.at) ?? 0) + 1); });
   const comparableTimestamps = [...observationGroups.entries()]

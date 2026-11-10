@@ -76,6 +76,27 @@ describe("data rules", () => {
     expect(artist.instagram.growthPercent).toBeNull();
   });
 
+  test("a new month with only live Minor AM data (no matching backfill row) still appears", () => {
+    // Regression: once historical backfill stops and live monitoring is the
+    // only thing running, a month should not need a matching Viberate/Modash
+    // or stored-monthly row just to show up in `months`/`monthlyHistory`.
+    const data = buildAudienceMonitorData(
+      batches({
+        roster: [["nthng", null, null, null, null, null, null]],
+        instagram: [
+          ["nthng", 15000, "4 Aug 2026", "4 Aug 2026", "OK"],
+          ["nthng", 16000, "4 Oct 2026", "4 Oct 2026", "OK"],
+        ],
+        historical: [["nthng", "Instagram", "4 Aug 2026", 15000, "Viberate"]],
+      }),
+    );
+    expect(data.months).toContain("2026-10");
+    const artist = data.artists.find((entry) => entry.name === "nthng")!;
+    const october = artist.monthlyHistory.find((point) => point.month === "2026-10");
+    expect(october?.followers).toBe(16000);
+    expect(october?.source).toBe("Minor AM monitoring");
+  });
+
   test("missing data stays null, never coerced to 0", () => {
     const data = buildAudienceMonitorData(
       batches({ roster: [["no-data", null, null, null, null, null, null]] }),
